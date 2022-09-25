@@ -1,0 +1,110 @@
+%Este script nos permite vizualizar el comportamiento del
+% clasificador multiclase SOFTMAX
+
+% Cargamos el conjunto de datos de las flores
+d = readtable('iris.dat');
+%Extraemos la informacion de pétalo y sépalo
+X = d{:,3:4}; %recordar que era un valor de 4 y lo cambiamos a
+% EN UNA REGRESION LINEAL x0 SIEMPRE ES = 1
+X = [ones(150,1), X];
+%Determinamos el numero de caractersiticas y de datos
+[m,n] = size(X);
+%Renombramos los nombres de las variables
+d.Properties.VariableNames={'Longitud_Sepalo', 'Ancho_Sepalo', 'Longitud_Petalo', 'Ancho_Petalo', 'Especie'};
+%creamos una variable categorica de las especies
+Especie = categorical(d.Especie);
+%Determinamos las flores de las especie Iris SETOSA
+iSetosa = Especie == categorical({'Iris-setosa'});
+iVersicolor = Especie == categorical({'Iris-versicolor'});
+iVirginica = Especie == categorical({'Iris-virginica'});
+%Creamos el vector de salidas correctas
+Y = double([iSetosa, iVersicolor, iVirginica]);
+
+%%Determiamos los parametros del clasificador
+%Razón de Aprendizaje
+eta = 0.2;
+%Número de clases a determinar
+k=3;
+%Matriz de parametros
+W = zeros(k,n);
+%Numero de epocas
+numEpocas = 1000;
+%Definimos la funcion de activacion (SOFTMAX)
+sigma = @ (x) exp (x)./ sum(exp (x));
+%Definimos la matriz de probabilidades
+%% Mostramos los datos de las distintas clases
+%creamos el vector para dibujar la frontera de desiciones
+x0 = linspace(min(X(1:100,1)), max(X(1:100,1)), 5 );
+% Cambiamos mapa de color
+colormap gray
+%Creamos la rejilla para visualizar la función de probabilidad
+numPuntos = 20;
+[X1,X2] = meshgrid(linspace(0,7,numPuntos),...
+    linspace(0,3,numPuntos));
+%Definimos la matriz de probabilidades par ala vizualizacion
+p1=zeros(numPuntos,numPuntos);
+p2=zeros(numPuntos,numPuntos);
+p3=zeros(numPuntos,numPuntos);
+% Grafico la funcion de probabilidad
+grafProb = imagesc([0,7],[0,3], 0*X1, [0,1]);
+colorbar
+set(gca,'Ydir','normal');
+hold on
+% Graficamos los datos de la SETOSA
+scatter(X(iSetosa, 2), X(iSetosa,3), 'sr')
+% Graficamos los datos de la VERSICOLOR
+scatter(X(iVersicolor,2), X(iVersicolor,3), '^b')
+% Graficamos los datos de la VIRGINICA
+scatter(X(iVirginica,2), X(iVirginica,3), 'og')
+hold off
+%Se visualiza el entrenamoiento
+ver=0;
+
+%%CLASIFICADOR LOGISTICO
+for q=1:numEpocas
+    % Calculamos el k-esimo gradiente del k-esimo vector de parametros
+    nablaJ = zeros(k,n);
+  for i = 1:m
+      % Extraemos el i-esimo vector de caracteristicas
+      xi = X(i,:)';
+      % Extraemos el i-esimo vector de salidas correctas
+      yi = Y(i,:)';
+      % Determinamos el i-esimo vector de predicciones
+      pi =sigma(W*xi);
+      for k = 1:k
+      nablaJ(k,:) = nablaJ(k,:) + ((pi(k) - yi(k))* xi)'/m;
+  end
+end
+
+%% Mostramos la probabilidad actual
+if ver == 1
+    % Calculamos las probabilidades de salida
+    for r=1:numPuntos*numPuntos
+        p = W*[1;X1(r);X2(r)];
+        % Elegimos la probailidad del nodo 1
+        p1(r)=p(1);
+        p2(r)=p(2);
+        p3(r)=p(3);
+    end
+    %Mostramos la probabilidad actual
+    set(grafProb,'Cdata', p1)
+    pause(0.01)
+end
+% Aplicamos el gradiente descendiente 
+W = W - eta * nablaJ;
+end
+
+%% Mostramos la probabilidad actual
+if ver == 0
+    % Calculamos las probabilidades de salida
+    for r=1:numPuntos*numPuntos
+        p = W*[1;X1(r);X2(r)];
+        % Elegimos la probailidad del nodo 1
+        p1(r)=p(1);
+        p2(r)=p(2);
+        p3(r)=p(3);
+    end
+    %Mostramos la probabilidad actual
+    set(grafProb,'Cdata', p3)
+    pause(0.01)
+end
