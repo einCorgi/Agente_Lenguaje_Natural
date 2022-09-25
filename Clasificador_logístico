@@ -1,0 +1,101 @@
+%% Este script implementa un ejemplo de Clasificador binario logistico
+% Cargamos el conjunto de datos de las flores
+d = readtable('iris.dat');
+%Extraemos la informacion de pétalo y sépalo
+X = d{:,1:2}; %recordar que era un valor de 4 y lo cambiamos a
+%Determinamos el numero de caractersiticas y de datos
+[m,n] = size(X);
+%Renombramos los nombres de las variables
+d.Properties.VariableNames={'Longitud_Sepalo', 'Ancho_Sepalo', 'Longitud_Petalo', 'Ancho_Petalo', 'Especie'};
+%creamos una variable categorica de las especies
+Especie = categorical(d.Especie);
+%Determinamos las flores de las especie Iris SETOSA
+iSetosa = Especie == categorical({'Iris-setosa'});
+%Creamos el vector de salidas correctas
+y = zeros(m,1);
+%Colocamos la etiqueta para la iris setosa
+y(iSetosa)=1;
+
+%% PROGRAMA PRINCIPAL
+% La tasa de aprendizaje
+eta = 0.4;
+% Numero de epocas
+epocas = 300;
+%Inicializamos el vectgor de parametros
+w = zeros(n,1);
+%Definimos la sigmoide
+sigma = @(t) 1./(1 + exp(-t));
+%creamos el vector para dibujar la frontera de desiciones
+x0 = linspace(min(X(1:100,1)), max(X(1:100,1)), 5 );
+%Creamos la rejilla para visualizar la función de probabilidad
+numPuntos = 20;
+[X0,X1] = meshgrid(linspace(4,7,numPuntos),...
+    linspace(2,4.5,numPuntos));
+%Creamos el vector para los errores del entrenamiento
+errorEnt = zeros(epocas, 1);
+%Cambiammos el mapa de color
+colormap gray;
+
+%% Algoritmo del Clasificador Logistico
+for q = 1:epocas
+    % Determinamos el gradiente de la funcion de costo
+    nablaJ = zeros(n,1); % esto era 'sumAcumulada = 0;'
+    for i = 1:m
+        % Extraemos el iesimo vector de caracteristicas
+        xi = X(i,:)';
+        % Extraemos la iesima salida correcta
+        yi = y(i);
+        % Calculamos la suma parcial de la sumatoria
+        nablaJ(1) = nablaJ(1) + (sigma(w'*xi) - yi)* xi(1);
+        nablaJ(2) = nablaJ(2) + (sigma(w'*xi) - yi)* xi(2);
+    end
+
+% Calculamos el promedio
+nablaJ = nablaJ/m;
+% Aplicamos el algoritmo de Gradiente Descendiente (GD)
+w = w - eta*nablaJ;
+
+%%Determinamos el error en el entrenamiento actual
+error = 0;
+  for i = 1:m
+      % Extraemos el iesimo vector de caracteristicas
+      xi = X(i,:)';
+      % Extraemos la iesima salida correcta
+      yi = y(i);
+      error = error + ...
+          (yi*log2(sigma(w'*xi) ) + ... 
+          (1-yi)*log2(sigma(1-w'*xi) ) );
+  end
+
+errorEnt(q) = -error / m;
+
+%% Mostramos el entrenamiento actual
+subplot(2,1,1)
+% Graficamos la función de Probabilidad
+% mesh(X0,X1, sigma(w(1)*X0+w(2)*X1));
+imagesc([4,7],[2,4.5], sigma(w(1)*X0+w(2)*X1));
+set(gca,'Ydir','normal');
+hold on
+
+%Caracteristicas x0 vs x1 de la setosa
+scatter( X(1:50,1), X(1:50,2), 'sr')
+%Graficamos las caracteristicas x= vs x1 de la NO SETOSA   
+scatter( X(51:100,1), X(51:100,2), 'dg')
+%Graficamos la frontera de decision
+plot(x0, -w(1)*x0/w(2), 'b', 'linewidth', 3)
+hold off
+% Colocamos las etiquetas de los ejes
+xlabel('Caracteristica X0', 'FontSize', 14)
+ylabel('Caracteristica X1', 'FontSize', 14)
+subplot(2,1,2)
+%Mostramos el error actual
+semilogy(errorEnt(1:q), '*')
+xlabel('Epocas', 'fontsize',14);
+ylabel({'Perdidas Logaritmicas',...
+    'Funcion de costo, J(w)'}, 'fontsize', 14);
+pause(0.1)
+end
+
+% Colocamos las etiquetas finales
+subplot(2,1,1)
+legend('Iris SETOSA', 'Iris VERSICOLOR', 'Frontera de Decisión')
