@@ -1,0 +1,36 @@
+%% ESTE SCRIPT PERMITE EL GRABADO VOZ PARA EVALUAR
+% EL ESPECTRO DE LA VOZ HUMANA.
+% Para que este script funciones necesitamos:
+% Num_Grabados      -> Número de grabaciones
+% Los resultados que ofrece son las grabaciones
+% en un archivo de salida
+Num_Grabados=100;
+% Frecuencia de muestreo
+fs=10000;
+% Creamos el elemento para grabar audi5o
+recObj = audiorecorder(fs, 16, 1);
+% Tiempo de grabado en segundos
+tiempo=1/100;
+clc
+espectro=zeros(fs*tiempo,1);
+t=linspace(0,tiempo,fs*tiempo);
+for n=1:Num_Grabados
+    recordblocking(recObj, tiempo);
+    % Obtenemos los datos
+    myRecording = getaudiodata(recObj);
+    [V,nu]=FFT_Completa(myRecording,t);
+    for m=1:fs*tiempo
+        if abs(V(m))>abs(espectro(m))
+            espectro(m)=V(m);
+        end
+    end
+    %% GRAFICAMOS LOS RESULTADOS
+    subplot(2,1,1), plot(t,myRecording);
+    ylim([-1 1])
+    xlabel('Tiempo (seg)')
+    subplot(2,1,2), bar(nu,abs(V)), hold on;
+    plot(nu,abs(espectro),'r'), hold off
+    xlim([0 4e3]), ylim([0 .5])
+    xlabel('Frecuencias (Hz)')
+end
+disp('Terminamos...')
